@@ -1,0 +1,99 @@
+/* ==========================================
+   AI PDF CHAT RAG - Responsive Stylesheet
+   ========================================== */
+
+/* Tablet & Medium Screens (max-width: 1024px) */
+@media (max-width: 1024px) {
+  .hero-title {
+    font-size: 3rem;
+  }
+  
+  .features-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .workflow-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .workflow-grid::before {
+    display: none;
+  }
+
+  .window-body {
+    grid-template-columns: 240px 1fr;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 36px;
+  }
+}
+
+/* Small Tablets & Mobile Devices (max-width: 768px) */
+@media (max-width: 768px) {
+  .nav-links {
+    display: none; /* Hide standard nav on mobile */
+  }
+
+  .mobile-toggle {
+    display: block;
+  }
+
+  .hero {
+    padding: 60px 0 40px 0;
+  }
+
+  .hero-title {
+    font-size: 2.25rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1.05rem;
+  }
+
+  .hero-stats {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .hero-ctas {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .hero-ctas .btn {
+    width: 100%;
+  }
+
+  .upload-card {
+    padding: 40px 20px;
+  }
+
+  .window-body {
+    grid-template-columns: 1fr;
+  }
+
+  .doc-sidebar {
+    display: none; /* Hide document preview sidebar on mobile screens */
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .workflow-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+}

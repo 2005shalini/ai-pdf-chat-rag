@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AI PDF Chat Assistant - Chat with any PDF document using Retrieval-Augmented Generation (RAG) and instant vector search with precise page citations.">
+  <title>DocuMind AI - Chat with Any PDF Document</title>
+  
+  <!-- CSS Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/navbar.css">
+  <link rel="stylesheet" href="css/hero.css">
+  <link rel="stylesheet" href="css/upload.css">
+  <link rel="stylesheet" href="css/chat.css">
+  <link rel="stylesheet" href="css/features.css">
+  <link rel="stylesheet" href="css/workflow.css">
+  <link rel="stylesheet" href="css/techstack.css">
+  <link rel="stylesheet" href="css/footer.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+  <!-- Ambient Glow Backgrounds -->
+  <div class="bg-glow-container" aria-hidden="true">
+    <div class="bg-glow-1"></div>
+    <div class="bg-glow-2"></div>
+    <div class="bg-glow-3"></div>
+  </div>
+
+  <!-- 1. NAVBAR -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="#" class="brand-logo" id="brand-logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+        </div>
+        <div class="brand-text">DocuMind <span>AI</span> <span class="rag-badge">RAG</span></div>
+      </a>
+
+      <nav>
+        <ul class="nav-links">
+          <li><a href="#upload" class="nav-link">Upload PDF</a></li>
+          <li><a href="#demo" class="nav-link">Live Chat Preview</a></li>
+          <li><a href="#features" class="nav-link">Features</a></li>
+          <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
+          <li><a href="#techstack" class="nav-link">Architecture</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions">
+        <a href="#upload" class="btn btn-primary btn-glow nav-cta">Get Started</a>
+        <button class="mobile-toggle" aria-label="Toggle mobile menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- 2. HERO SECTION -->
+    <section class="hero">
+      <div class="container">
+        <div class="hero-content">
+          <div class="hero-badge">
+            <span class="pulse-dot"></span>
+            <span>✨ Powered by RAG & Vector Search Engine</span>
+          </div>
+
+          <h1 class="hero-title">
+            Transform Any PDF into an <br>
+            <span class="gradient-span">Interactive Conversation</span>
+          </h1>
+
+          <p class="hero-subtitle">
+            Upload your PDF documents and ask questions in natural language. Get instant, accurate, 
+            citation-backed answers powered by Retrieval-Augmented Generation.
+          </p>
+
+          <div class="hero-ctas">
+            <a href="#upload" class="btn btn-primary btn-glow">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              Upload PDF Now
+            </a>
+            <a href="#demo" class="btn btn-secondary">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polygon points="10 8 16 12 10 16 10 8"></polygon>
+              </svg>
+              See Live Demo
+            </a>
+          </div>
+
+          <!-- Hero Stats Bar -->
+          <div class="hero-stats">
+            <div class="stat-item">
+              <div class="stat-number">&lt; 1.0s</div>
+              <div class="stat-label">Retrieval Latency</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number">100%</div>
+              <div class="stat-label">Source Citation Accuracy</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number">Zero</div>
+              <div class="stat-label">Data Retention / Private</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. PDF UPLOAD AREA -->
+    <section class="upload-section" id="upload">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">PDF Ingestion</span>
+          <h2 class="section-title">Upload Your Document</h2>
+          <p class="section-subtitle">Drop your PDF file below to vectorize chunks and start querying instant AI responses.</p>
+        </div>
+
+        <div class="upload-wrapper">
+          <div class="upload-card" id="drop-zone">
+            <div class="upload-icon-wrapper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <path d="M12 18v-6"></path>
+                <path d="m9 15 3-3 3 3"></path>
+              </svg>
+            </div>
+
+            <h3 class="upload-title">Drag & Drop your PDF file here</h3>
+            <p class="upload-subtitle">or select a document from your computer</p>
+
+            <div class="upload-actions">
+              <button class="btn btn-primary btn-glow" id="browse-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                Browse PDF File
+              </button>
+              <input type="file" id="pdf-input" accept=".pdf" class="file-input-hidden">
+            </div>
+
+            <div class="upload-limits">
+              <span class="limit-badge">PDF format only</span>
+              <span class="limit-badge">Up to 50MB</span>
+              <span class="limit-badge">Multi-page support</span>
+            </div>
+          </div>
+
+          <!-- Sample PDFs Quick Select -->
+          <div class="sample-docs-container">
+            <div class="sample-docs-label">Or test with a sample document:</div>
+            <div class="sample-chips">
+              <button class="sample-chip">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg>
+                Financial_Report_2024.pdf
+              </button>
+              <button class="sample-chip">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg>
+                RAG_Architecture_Paper.pdf
+              </button>
+              <button class="sample-chip">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg>
+                Software_User_Manual.pdf
+              </button>
+            </div>
+          </div>
+
+          <!-- Mock File Ready Preview Card -->
+          <div class="upload-ready-preview">
+            <div class="preview-file-info">
+              <div class="preview-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+              </div>
+              <div>
+                <div class="preview-name">Quarterly_Financial_Report_Q4.pdf</div>
+                <div class="preview-meta">48 Pages • 4.2 MB • Ingested & Vectorized</div>
+              </div>
+            </div>
+            <div class="ready-status-tag">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              Ready to Chat
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. CHAT PREVIEW SECTION -->
+    <section class="chat-preview-section" id="demo">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">Interactive Preview</span>
+          <h2 class="section-title">Context-Aware AI Document Chat</h2>
+          <p class="section-subtitle">Experience how DocuMind AI answers questions based strictly on your document context.</p>
+        </div>
+
+        <!-- SaaS Interface Mockup -->
+        <div class="chat-window">
+          <!-- Top Window Bar -->
+          <div class="window-header">
+            <div class="window-dots">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+            </div>
+            <div class="window-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              </svg>
+              DocuMind AI Workspace — Quarterly_Financial_Report_Q4.pdf
+            </div>
+            <div class="window-status">
+              <span class="pulse-dot" style="width:6px;height:6px;"></span>
+              RAG Engine Online
+            </div>
+          </div>
+
+          <!-- Window Inner Layout -->
+          <div class="window-body">
+            <!-- Sidebar -->
+            <aside class="doc-sidebar">
+              <div class="sidebar-heading">Active Document</div>
+              <div class="doc-info-card">
+                <div class="doc-icon-badge">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <div class="doc-details-name">Financial_Report.pdf</div>
+                  <div class="doc-details-pages">48 Pages • 324 Chunks</div>
+                </div>
+              </div>
+
+              <div class="sidebar-summary-box">
+                <div class="summary-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                  Key Document Takeaways
+                </div>
+                <ul class="summary-list">
+                  <li>Net revenue increased 24.5% in Q4</li>
+                  <li>Operating expense ratio down 8%</li>
+                  <li>R&D investments expanded in AI models</li>
+                </ul>
+              </div>
+
+              <div class="vector-index-badge">
+                <span>Vector Embeddings</span>
+                <span>324 Chunks</span>
+              </div>
+            </aside>
+
+            <!-- Chat Container -->
+            <div class="chat-main">
+              <div class="chat-messages">
+                
+                <!-- User Message 1 -->
+                <div class="chat-bubble user">
+                  <div class="chat-avatar">U</div>
+                  <div class="chat-content">
+                    What was the total net revenue for Q4 2023, and what factors drove the year-over-year growth?
+                  </div>
+                </div>
+
+                <!-- AI Response 1 -->
+                <div class="chat-bubble ai">
+                  <div class="chat-avatar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                  </div>
+                  <div class="chat-content">
+                    According to <strong>Section 3.2 (Financial Performance Highlights)</strong>, total net revenue reached <strong>$42.8 Million</strong> in Q4 2023, reflecting a <strong>24.5% year-over-year increase</strong>.
+                    <br><br>
+                    The key drivers identified in the report include:
+                    <ul style="margin-top:8px; padding-left:18px;">
+                      <li>38% growth in cloud enterprise subscriptions.</li>
+                      <li>Operational efficiency gains reducing overhead by 8%.</li>
+                    </ul>
+
+                    <div class="citation-box">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                      <span>Citation Source: <span class="citation-tag">Page 14, Paragraph 3</span> (Similarity Score: 98.4%)</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- User Message 2 -->
+                <div class="chat-bubble user">
+                  <div class="chat-avatar">U</div>
+                  <div class="chat-content">
+                    Does the document outline any strategic risks for the upcoming fiscal year?
+                  </div>
+                </div>
+
+                <!-- AI Response 2 -->
+                <div class="chat-bubble ai">
+                  <div class="chat-avatar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                  </div>
+                  <div class="chat-content">
+                    Yes. <strong>Chapter 5 (Risk Factors & Outlook)</strong> highlights three primary strategic risks:
+                    <br><br>
+                    1. <strong>Supply Chain Dependencies</strong>: Short-term hardware component delays.<br>
+                    2. <strong>Foreign Exchange Volatility</strong>: Fluctuations in international currency exchange rates.<br>
+                    3. <strong>Regulatory Compliance</strong>: Evolving international AI governance standards.
+
+                    <div class="citation-box">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                      <span>Citation Source: <span class="citation-tag">Page 32, Section 5.1</span> (Similarity Score: 96.1%)</span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Input Area Mock -->
+              <div class="chat-input-wrapper">
+                <div class="chat-input-bar">
+                  <input type="text" placeholder="Ask any question about this document..." readonly>
+                  <button class="chat-send-btn" aria-label="Send message">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. FEATURES SECTION -->
+    <section class="features-section" id="features">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">Key Capabilities</span>
+          <h2 class="section-title">Engineered for Document Intelligence</h2>
+          <p class="section-subtitle">Discover the technology that turns static PDFs into dynamic knowledge systems.</p>
+        </div>
+
+        <div class="features-grid">
+          <!-- Feature 1 -->
+          <div class="feature-card">
+            <div class="feature-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+            </div>
+            <h3 class="feature-title">Instant Vector Search (RAG)</h3>
+            <p class="feature-description">
+              Converts document chunks into numerical vector embeddings to retrieve relevant context in milliseconds without hallucination.
+            </p>
+            <div class="feature-badge-mini">⚡ Vector Embeddings</div>
+          </div>
+
+          <!-- Feature 2 -->
+          <div class="feature-card">
+            <div class="feature-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+            </div>
+            <h3 class="feature-title">Precise Source Citations</h3>
+            <p class="feature-description">
+              Every AI response links directly to exact page numbers and paragraphs so you can verify answers instantly.
+            </p>
+            <div class="feature-badge-mini">📍 100% Verifiable</div>
+          </div>
+
+          <!-- Feature 3 -->
+          <div class="feature-card">
+            <div class="feature-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </div>
+            <h3 class="feature-title">Bank-Grade Data Privacy</h3>
+            <p class="feature-description">
+              Your uploaded documents are processed securely in memory and never stored or used to train public LLM models.
+            </p>
+            <div class="feature-badge-mini">🔒 Private & Secure</div>
+          </div>
+
+          <!-- Feature 4 -->
+          <div class="feature-card">
+            <div class="feature-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+            </div>
+            <h3 class="feature-title">Large Document Processing</h3>
+            <p class="feature-description">
+              Handles complex PDFs, research papers, financial reports, and technical manuals up to 50MB with ease.
+            </p>
+            <div class="feature-badge-mini">📑 100+ Pages</div>
+          </div>
+
+          <!-- Feature 5 -->
+          <div class="feature-card">
+            <div class="feature-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg>
+            </div>
+            <h3 class="feature-title">Automatic Summarization</h3>
+            <p class="feature-description">
+              Get key takeaways, section breakdowns, and executive summaries automatically as soon as your PDF is uploaded.
+            </p>
+            <div class="feature-badge-mini">💡 Executive Summary</div>
+          </div>
+
+          <!-- Feature 6 -->
+          <div class="feature-card">
+            <div class="feature-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              </svg>
+            </div>
+            <h3 class="feature-title">Natural Language Q&A</h3>
+            <p class="feature-description">
+              Ask follow-up questions naturally with full multi-turn conversational memory over your document content.
+            </p>
+            <div class="feature-badge-mini">💬 Multi-turn Memory</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. HOW IT WORKS SECTION -->
+    <section class="workflow-section" id="how-it-works">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">System Workflow</span>
+          <h2 class="section-title">How It Works</h2>
+          <p class="section-subtitle">From raw document to AI insights in four simple steps.</p>
+        </div>
+
+        <div class="workflow-grid">
+          <!-- Step 1 -->
+          <div class="workflow-card">
+            <div class="step-number">1</div>
+            <div class="step-icon-wrapper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            </div>
+            <h3 class="step-title">Upload PDF</h3>
+            <p class="step-desc">Drag and drop your PDF document into the secure ingestion zone.</p>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="workflow-card">
+            <div class="step-number">2</div>
+            <div class="step-icon-wrapper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+            </div>
+            <h3 class="step-title">Vector Ingestion</h3>
+            <p class="step-desc">Text is extracted, chunked, and converted into dense vector embeddings.</p>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="workflow-card">
+            <div class="step-number">3</div>
+            <div class="step-icon-wrapper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </div>
+            <h3 class="step-title">Context Search</h3>
+            <p class="step-desc">Your question triggers semantic similarity retrieval across document chunks.</p>
+          </div>
+
+          <!-- Step 4 -->
+          <div class="workflow-card">
+            <div class="step-number">4</div>
+            <div class="step-icon-wrapper">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            </div>
+            <h3 class="step-title">Instant Answers</h3>
+            <p class="step-desc">The LLM synthesizes retrieved passages into citation-backed answers.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TECH STACK BAR -->
+    <section class="techstack-section" id="techstack">
+      <div class="container">
+        <div class="techstack-title">Engineered with State-of-the-Art Technologies</div>
+        <div class="techstack-grid">
+          <div class="tech-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+            Retrieval-Augmented Generation
+          </div>
+          <div class="tech-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M8 12h8"></path></svg>
+            Vector Embeddings
+          </div>
+          <div class="tech-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+            Python Backend Architecture
+          </div>
+          <div class="tech-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg>
+            HTML5 & CSS3 Frontend
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 7. FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="#" class="brand-logo">
+            <div class="logo-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+              </svg>
+            </div>
+            <div class="brand-text">DocuMind <span>AI</span></div>
+          </a>
+          <p class="footer-desc">
+            An intelligent PDF question-answering platform powered by RAG architecture to extract precise context from documents.
+          </p>
+          <div class="footer-status-card">
+            <span class="pulse-dot" style="width:8px;height:8px;"></span>
+            All RAG Pipelines Operational
+          </div>
+        </div>
+
+        <div>
+          <h4 class="footer-column-title">Product</h4>
+          <ul class="footer-links">
+            <li><a href="#upload" class="footer-link">PDF Upload</a></li>
+            <li><a href="#demo" class="footer-link">Chat Preview</a></li>
+            <li><a href="#features" class="footer-link">Features</a></li>
+            <li><a href="#how-it-works" class="footer-link">How It Works</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-column-title">RAG Engine</h4>
+          <ul class="footer-links">
+            <li><a href="#techstack" class="footer-link">Vector Storage</a></li>
+            <li><a href="#techstack" class="footer-link">Text Chunking</a></li>
+            <li><a href="#techstack" class="footer-link">Similarity Match</a></li>
+            <li><a href="#techstack" class="footer-link">Page Citations</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-column-title">Project</h4>
+          <ul class="footer-links">
+            <li><a href="https://github.com/2005shalini/ai-pdf-chat-rag" target="_blank" class="footer-link">GitHub Repository</a></li>
+            <li><a href="#" class="footer-link">Architecture Docs</a></li>
+            <li><a href="#" class="footer-link">API Specification</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div class="footer-copyright">
+          © 2026 <span>DocuMind AI</span>. Built for Computer Science & Engineering (AI).
+        </div>
+        <div>
+          Engineered by <span>Shalini Richhariya</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
