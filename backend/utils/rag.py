@@ -1,5 +1,21 @@
 import os
+import numpy as np
 from utils.pdf import extract_text_from_pdf
+
+# Global model cache for SentenceTransformer
+_EMBEDDING_MODEL = None
+DEFAULT_MODEL_NAME = "all-MiniLM-L6-v2"
+
+
+def get_embedding_model(model_name=DEFAULT_MODEL_NAME):
+    """
+    Lazy loads and caches the SentenceTransformer model.
+    """
+    global _EMBEDDING_MODEL
+    if _EMBEDDING_MODEL is None:
+        from sentence_transformers import SentenceTransformer
+        _EMBEDDING_MODEL = SentenceTransformer(model_name)
+    return _EMBEDDING_MODEL
 
 
 def chunk_text_by_pages(pages_data, chunk_size=500, chunk_overlap=100):
@@ -25,7 +41,6 @@ def chunk_text_by_pages(pages_data, chunk_size=500, chunk_overlap=100):
         if not page_text:
             continue
 
-        # If page text fits within a single chunk
         if len(page_text) <= chunk_size:
             chunks.append({
                 "chunk_id": chunk_counter,
@@ -34,7 +49,6 @@ def chunk_text_by_pages(pages_data, chunk_size=500, chunk_overlap=100):
             })
             chunk_counter += 1
         else:
-            # Sliding window chunking with overlap
             start = 0
             text_len = len(page_text)
 
@@ -61,11 +75,6 @@ def chunk_text_by_pages(pages_data, chunk_size=500, chunk_overlap=100):
 def process_pdf_into_chunks(filepath, chunk_size=500, chunk_overlap=100):
     """
     Reuses PDF text extraction from pdf.py and splits the document into chunks with page metadata.
-
-    :param filepath: path to PDF file
-    :param chunk_size: chunk size in characters
-    :param chunk_overlap: overlap size in characters
-    :return: dict with success status, filename, total_chunks, chunks array, and message
     """
     extraction = extract_text_from_pdf(filepath)
 
@@ -86,4 +95,80 @@ def process_pdf_into_chunks(filepath, chunk_size=500, chunk_overlap=100):
         "total_chunks": len(chunks),
         "chunks": chunks,
         "message": f"Successfully processed PDF into {len(chunks)} chunk(s)."
+    }
+
+
+def generate_embeddings_for_chunks(chunks, model_name=DEFAULT_MODEL_NAME):
+    """
+    Converts text chunks into numerical vector embeddings using SentenceTransformers.
+    Preserves page numbers and original chunk text together with each embedding vector.
+
+    :param chunks: list of dicts [{"chunk_id": int, "text": str, "page": int}]
+    :param model_name: SentenceTransformer model name (default: "all-MiniLM-L6-v2")
+    :return: dict with total_chunks, dimension, embedded_chunks, and float32 numpy_embeddings ready for FAISS
+    """
+    if not chunks:
+        return {
+            "success": False,
+            "total_chunks": 0,
+            "dimension": 0,
+            "embedded_chunks": [],
+            "numpy_embeddings": np.empty((0, 0), dtype=np.float32),
+            "message": "No text chunks provided for embedding generation."
+        }
+
+    model = get_embedding_model(model_name)
+    texts = [c["text"] for c in chunks]
+
+    # Generate 384-dimensional dense vector embeddings
+    raw_embeddings = model.encode(texts, convert_to_numpy=True, show_progress_bar=False)
+    numpy_embeddings = np.array(raw_embeddings, dtype=np.float32)
+
+    dimension = int(numpy_embeddings.shape[1]) if numpy_embeddings.ndim > 1 else 0
+
+    embedded_chunks = []
+    for idx, chunk in enumerate(chunks):
+        vec_list = numpy_embeddings[idx].tolist()
+        embedded_chunks.append({
+            "chunk_id": chunk.get("chunk_id", idx),
+            "text": chunk.get("text", ""),
+            "page": chunk.get("page", 1),
+            "embedding": vec_list
+        })
+
+    return {
+        "success": True,
+        "total_chunks": len(embedded_chunks),
+        "dimension": dimension,
+        "embedded_chunks": embedded_chunks,
+        "numpy_embeddings": numpy_embeddings,
+        "message": f"Successfully generated {len(embedded_chunks)} embedding(s) of dimension {dimension} using model '{model_name}'."
+    }
+
+
+def process_pdf_into_embeddings(filepath, chunk_size=500, chunk_overlap=100):
+    """
+    Complete pipeline: PDF -> Text Extraction -> Chunking -> Vector Embeddings.
+    """
+    chunk_res = process_pdf_into_chunks(filepath, chunk_size, chunk_overlap)
+
+    if not chunk_res["success"]:
+        return {
+            "success": False,
+            "filename": chunk_res.get("filename"),
+            "total_chunks": 0,
+            "dimension": 0,
+            "chunks": [],
+            "message": chunk_res.get("message")
+        }
+
+    emb_res = generate_embeddings_for_chunks(chunk_res["chunks"])
+
+    return {
+        "success": True,
+        "filename": chunk_res["filename"],
+        "total_chunks": emb_res["total_chunks"],
+        "dimension": emb_res["dimension"],
+        "chunks": emb_res["embedded_chunks"],
+        "message": f"Successfully generated {emb_res['total_chunks']} chunk embedding(s) of dimension {emb_res['dimension']}."
     }

@@ -3,9 +3,10 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from utils.pdf import extract_text_from_pdf
-from utils.rag import process_pdf_into_chunks
+from utils.rag import process_pdf_into_chunks, process_pdf_into_embeddings
 
 app = Flask(__name__)
+
 CORS(app)  # Enable CORS for frontend requests
 
 
@@ -196,9 +197,92 @@ def chunk_pdf_text():
         }), 500
 
 
+@app.route('/embed', methods=['POST'])
+def embed_pdf_chunks():
+    try:
+        data = request.get_json(silent=True) or request.form
+        filename = data.get('filename') if data else None
+
+        if not filename:
+            return jsonify({
+                "success": False,
+                "filename": None,
+                "total_chunks": 0,
+                "dimension": 0,
+                "embeddings_count": 0,
+                "chunks": [],
+                "message": "Filename parameter is missing"
+            }), 400
+
+        clean_filename = secure_filename(filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], clean_filename)
+
+        if not os.path.exists(filepath):
+            return jsonify({
+                "success": False,
+                "filename": filename,
+                "total_chunks": 0,
+                "dimension": 0,
+                "embeddings_count": 0,
+                "chunks": [],
+                "message": f"PDF file not found in uploads: {filename}"
+            }), 404
+
+        chunk_size = int(data.get('chunk_size', 500)) if data else 500
+        chunk_overlap = int(data.get('chunk_overlap', 100)) if data else 100
+
+        result = process_pdf_into_embeddings(filepath, chunk_size, chunk_overlap)
+
+        if not result["success"]:
+            return jsonify({
+                "success": False,
+                "filename": filename,
+                "total_chunks": 0,
+                "dimension": 0,
+                "embeddings_count": 0,
+                "chunks": [],
+                "message": result["message"]
+            }), 400
+
+        return_vectors = data.get('return_vectors', False) if data else False
+        chunks_summary = []
+        for c in result["chunks"]:
+            item = {
+                "chunk_id": c["chunk_id"],
+                "page": c["page"],
+                "text": c["text"],
+                "embedding_dimension": len(c["embedding"])
+            }
+            if return_vectors:
+                item["embedding"] = c["embedding"]
+            chunks_summary.append(item)
+
+        return jsonify({
+            "success": True,
+            "filename": filename,
+            "total_chunks": result["total_chunks"],
+            "dimension": result["dimension"],
+            "embeddings_count": len(result["chunks"]),
+            "chunks": chunks_summary,
+            "message": result["message"]
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "filename": None,
+            "total_chunks": 0,
+            "dimension": 0,
+            "embeddings_count": 0,
+            "chunks": [],
+            "message": f"Embedding generation error: {str(e)}"
+        }), 500
+
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
+
 
 
 
