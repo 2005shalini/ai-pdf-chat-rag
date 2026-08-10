@@ -2,6 +2,7 @@ import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
+from utils.pdf import extract_text_from_pdf
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend requests
@@ -73,7 +74,69 @@ def upload_file():
         }), 500
 
 
+@app.route('/extract', methods=['POST'])
+def extract_pdf_text():
+    try:
+        data = request.get_json(silent=True) or request.form
+        filename = data.get('filename') if data else None
+
+        if not filename:
+            return jsonify({
+                "success": False,
+                "filename": None,
+                "number_of_pages": 0,
+                "extracted_text": "",
+                "pages": [],
+                "message": "Filename parameter is missing"
+            }), 400
+
+        clean_filename = secure_filename(filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], clean_filename)
+
+        if not os.path.exists(filepath):
+            return jsonify({
+                "success": False,
+                "filename": filename,
+                "number_of_pages": 0,
+                "extracted_text": "",
+                "pages": [],
+                "message": f"PDF file not found in uploads: {filename}"
+            }), 404
+
+        result = extract_text_from_pdf(filepath)
+
+        if not result["success"]:
+            return jsonify({
+                "success": False,
+                "filename": filename,
+                "number_of_pages": result["total_pages"],
+                "extracted_text": "",
+                "pages": result["pages"],
+                "message": result["message"]
+            }), 400
+
+        return jsonify({
+            "success": True,
+            "filename": filename,
+            "number_of_pages": result["total_pages"],
+            "extracted_text": result["full_text"],
+            "pages": result["pages"],
+            "message": result["message"]
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "filename": None,
+            "number_of_pages": 0,
+            "extracted_text": "",
+            "pages": [],
+            "message": f"Extraction error: {str(e)}"
+        }), 500
+
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
+
 
