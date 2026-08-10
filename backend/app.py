@@ -3,9 +3,11 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from utils.pdf import extract_text_from_pdf
+from utils.rag import process_pdf_into_chunks
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend requests
+
 
 # Ensure uploads directory exists
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
@@ -135,8 +137,68 @@ def extract_pdf_text():
         }), 500
 
 
+@app.route('/chunk', methods=['POST'])
+def chunk_pdf_text():
+    try:
+        data = request.get_json(silent=True) or request.form
+        filename = data.get('filename') if data else None
+
+        if not filename:
+            return jsonify({
+                "success": False,
+                "filename": None,
+                "total_chunks": 0,
+                "chunks": [],
+                "message": "Filename parameter is missing"
+            }), 400
+
+        clean_filename = secure_filename(filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], clean_filename)
+
+        if not os.path.exists(filepath):
+            return jsonify({
+                "success": False,
+                "filename": filename,
+                "total_chunks": 0,
+                "chunks": [],
+                "message": f"PDF file not found in uploads: {filename}"
+            }), 404
+
+        chunk_size = int(data.get('chunk_size', 500)) if data else 500
+        chunk_overlap = int(data.get('chunk_overlap', 100)) if data else 100
+
+        result = process_pdf_into_chunks(filepath, chunk_size, chunk_overlap)
+
+        if not result["success"]:
+            return jsonify({
+                "success": False,
+                "filename": filename,
+                "total_chunks": 0,
+                "chunks": [],
+                "message": result["message"]
+            }), 400
+
+        return jsonify({
+            "success": True,
+            "filename": filename,
+            "total_chunks": result["total_chunks"],
+            "chunks": result["chunks"],
+            "message": result["message"]
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "filename": None,
+            "total_chunks": 0,
+            "chunks": [],
+            "message": f"Chunking error: {str(e)}"
+        }), 500
+
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
+
 
 
