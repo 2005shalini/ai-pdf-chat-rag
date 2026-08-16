@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const readyStatusTag = document.querySelector('.ready-status-tag');
     const sampleChips = document.querySelectorAll('.sample-chip');
 
-    const API_URL = 'http://127.0.0.1:5000/upload';
+    const API_URL = 'http://127.0.0.1:5001/upload';
 
     // Click trigger for file browse button
     if (browseBtn && pdfInput) {
@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error('PDF Upload Fetch Error:', error);
-            showErrorState('Could not connect to Flask backend (http://127.0.0.1:5000). Ensure app.py is running.');
+            showErrorState('Could not connect to Flask backend (http://127.0.0.1:5001). Ensure app.py is running.');
         }
     }
 
