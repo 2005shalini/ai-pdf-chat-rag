@@ -1,0 +1,20 @@
+{
+  "total_chunks": 2,
+  "dimension": 384,
+  "chunks": [
+    {
+      "chunk_id": 0,
+      "page": 1,
+      "text": "Python Backend Developer Interview Notes\n(Outline)\nPage 1\nPython Basics: variables, data types, casting, input/output\nPage 2\nOperators\nPage 3\nStrings\nPage 4\nLists, Tuples, Sets, Dictionaries\nPage 5\nControl Flow\nPage 6\nFunctions\nPage 7\nOOP\nPage 8\nException Handling\nPage 9\nFile Handling\nPage 10\nModules, Packages, Virtual Environments\nPage 11\nFlask & REST APIs\nPage 12\nMySQL & CRUD\nPage 13\nCore Interview Questions"
+    },
+    {
+      "chunk_id": 1,
+      "page": 2,
+      "text": "Page 14\nBackend Interview Questions\nPage 15\nCheat Sheet & Revision"
+    }
+  ],
+  "filename": "Python_Backend_Interview_Notes_Outline.pdf",
+  "chunk_size": 500,
+  "chunk_overlap": 100,
+  "model_name": "all-MiniLM-L6-v2"
+}

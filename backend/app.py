@@ -3,7 +3,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from utils.pdf import extract_text_from_pdf
-from utils.rag import process_pdf_into_chunks, process_pdf_into_embeddings
+from utils.rag import process_pdf_into_chunks, process_pdf_into_embeddings, process_pdf_into_faiss_index
 
 app = Flask(__name__)
 
@@ -49,7 +49,8 @@ def index():
             "upload": "POST /upload",
             "extract": "POST /extract",
             "chunk": "POST /chunk",
-            "embed": "POST /embed"
+            "embed": "POST /embed",
+            "index": "POST /index"
         }
     }), 200
 
@@ -319,6 +320,79 @@ def embed_pdf_chunks():
             "embeddings_count": 0,
             "chunks": [],
             "message": f"Embedding generation error: {str(e)}"
+        }), 500
+
+
+@app.route('/index', methods=['POST', 'OPTIONS'])
+@app.route('/api/index', methods=['POST', 'OPTIONS'])
+def create_pdf_faiss_index():
+    if request.method == 'OPTIONS':
+        return jsonify({"status": "ok"}), 200
+
+    try:
+        data = request.get_json(silent=True) or request.form
+        filename = data.get('filename') if data else None
+
+        if not filename:
+            return jsonify({
+                "success": False,
+                "filename": None,
+                "total_chunks": 0,
+                "dimension": 0,
+                "index_path": "",
+                "metadata_path": "",
+                "message": "Filename parameter is missing"
+            }), 400
+
+        clean_filename = secure_filename(filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], clean_filename)
+
+        if not os.path.exists(filepath):
+            return jsonify({
+                "success": False,
+                "filename": filename,
+                "total_chunks": 0,
+                "dimension": 0,
+                "index_path": "",
+                "metadata_path": "",
+                "message": f"PDF file not found in uploads: {filename}"
+            }), 404
+
+        chunk_size = int(data.get('chunk_size', 500)) if data else 500
+        chunk_overlap = int(data.get('chunk_overlap', 100)) if data else 100
+
+        result = process_pdf_into_faiss_index(filepath, chunk_size, chunk_overlap)
+
+        if not result["success"]:
+            return jsonify({
+                "success": False,
+                "filename": filename,
+                "total_chunks": 0,
+                "dimension": 0,
+                "index_path": "",
+                "metadata_path": "",
+                "message": result["message"]
+            }), 400
+
+        return jsonify({
+            "success": True,
+            "filename": filename,
+            "total_chunks": result["total_chunks"],
+            "dimension": result["dimension"],
+            "index_path": result["index_path"],
+            "metadata_path": result["metadata_path"],
+            "message": result["message"]
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "filename": None,
+            "total_chunks": 0,
+            "dimension": 0,
+            "index_path": "",
+            "metadata_path": "",
+            "message": f"FAISS index creation error: {str(e)}"
         }), 500
 
 

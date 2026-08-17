@@ -1,10 +1,17 @@
 import os
+import json
 import numpy as np
+import faiss
 from utils.pdf import extract_text_from_pdf
 
 # Global model cache for SentenceTransformer
 _EMBEDDING_MODEL = None
 DEFAULT_MODEL_NAME = "all-MiniLM-L6-v2"
+
+# Vectorstore directory paths
+VECTORSTORE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "vectorstore"))
+DEFAULT_INDEX_PATH = os.path.join(VECTORSTORE_DIR, "index.faiss")
+DEFAULT_METADATA_PATH = os.path.join(VECTORSTORE_DIR, "metadata.json")
 
 
 def get_embedding_model(model_name=DEFAULT_MODEL_NAME):
@@ -172,3 +179,177 @@ def process_pdf_into_embeddings(filepath, chunk_size=500, chunk_overlap=100):
         "chunks": emb_res["embedded_chunks"],
         "message": f"Successfully generated {emb_res['total_chunks']} chunk embedding(s) of dimension {emb_res['dimension']}."
     }
+
+
+def create_faiss_index(numpy_embeddings):
+    """
+    Creates a FAISS IndexFlatL2 index and adds the generated embeddings.
+
+    :param numpy_embeddings: 2D numpy array of shape (N, dimension) with dtype float32
+    :return: faiss.IndexFlatL2 instance populated with vectors
+    """
+    if numpy_embeddings is None or numpy_embeddings.size == 0:
+        raise ValueError("Cannot create FAISS index: numpy_embeddings is empty or None.")
+
+    if not isinstance(numpy_embeddings, np.ndarray):
+        numpy_embeddings = np.array(numpy_embeddings, dtype=np.float32)
+    elif numpy_embeddings.dtype != np.float32:
+        numpy_embeddings = numpy_embeddings.astype(np.float32)
+
+    if numpy_embeddings.ndim != 2:
+        raise ValueError(f"numpy_embeddings must be 2D array, got ndim={numpy_embeddings.ndim}")
+
+    dimension = int(numpy_embeddings.shape[1])
+    index = faiss.IndexFlatL2(dimension)
+    index.add(np.ascontiguousarray(numpy_embeddings))
+
+    return index
+
+
+def save_faiss_index_and_metadata(index, chunks, index_path=DEFAULT_INDEX_PATH, metadata_path=DEFAULT_METADATA_PATH, extra_info=None):
+    """
+    Saves the FAISS index file and corresponding chunk metadata JSON file inside vectorstore.
+    Ensures every vector index (0 to N-1) maps directly to chunk_id, page, and text.
+
+    :param index: faiss index instance
+    :param chunks: list of chunk dicts [{"chunk_id": int, "page": int, "text": str}]
+    :param index_path: file path for .faiss index
+    :param metadata_path: file path for .json metadata
+    :param extra_info: optional dict of additional document/index metadata
+    :return: dict with paths and total chunk count
+    """
+    os.makedirs(os.path.dirname(os.path.abspath(index_path)), exist_ok=True)
+    os.makedirs(os.path.dirname(os.path.abspath(metadata_path)), exist_ok=True)
+
+    # Save FAISS index
+    faiss.write_index(index, index_path)
+
+    # Prepare clean serializable metadata mapping chunk_id, page, text
+    clean_chunks = []
+    for idx, c in enumerate(chunks):
+        clean_chunks.append({
+            "chunk_id": c.get("chunk_id", idx),
+            "page": c.get("page", 1),
+            "text": c.get("text", "")
+        })
+
+    metadata_payload = {
+        "total_chunks": len(clean_chunks),
+        "dimension": int(index.d),
+        "chunks": clean_chunks
+    }
+
+    if extra_info and isinstance(extra_info, dict):
+        metadata_payload.update(extra_info)
+
+    # Save metadata JSON
+    with open(metadata_path, "w", encoding="utf-8") as f:
+        json.dump(metadata_payload, f, indent=2, ensure_ascii=False)
+
+    return {
+        "index_path": index_path,
+        "metadata_path": metadata_path,
+        "total_chunks": len(clean_chunks),
+        "dimension": int(index.d)
+    }
+
+
+def load_faiss_index_and_metadata(index_path=DEFAULT_INDEX_PATH, metadata_path=DEFAULT_METADATA_PATH):
+    """
+    Loads FAISS index and metadata from disk.
+
+    :param index_path: path to .faiss file
+    :param metadata_path: path to .json metadata file
+    :return: dict with index instance, metadata dict, and chunks list
+    """
+    if not os.path.exists(index_path):
+        return {
+            "success": False,
+            "message": f"FAISS index file not found at: {index_path}",
+            "index": None,
+            "chunks": []
+        }
+
+    if not os.path.exists(metadata_path):
+        return {
+            "success": False,
+            "message": f"Metadata file not found at: {metadata_path}",
+            "index": None,
+            "chunks": []
+        }
+
+    index = faiss.read_index(index_path)
+    with open(metadata_path, "r", encoding="utf-8") as f:
+        metadata_payload = json.load(f)
+
+    chunks = metadata_payload.get("chunks", [])
+
+    return {
+        "success": True,
+        "index": index,
+        "metadata": metadata_payload,
+        "chunks": chunks,
+        "total_chunks": index.ntotal,
+        "dimension": index.d,
+        "message": f"Successfully loaded FAISS index with {index.ntotal} vectors and metadata."
+    }
+
+
+def process_pdf_into_faiss_index(filepath, chunk_size=500, chunk_overlap=100, index_path=DEFAULT_INDEX_PATH, metadata_path=DEFAULT_METADATA_PATH):
+    """
+    Complete Phase 6 pipeline:
+    PDF -> Extract text -> Create chunks -> Generate embeddings -> Create FAISS index -> Save index + metadata.
+    """
+    chunk_res = process_pdf_into_chunks(filepath, chunk_size, chunk_overlap)
+
+    if not chunk_res["success"]:
+        return {
+            "success": False,
+            "filename": chunk_res.get("filename"),
+            "total_chunks": 0,
+            "dimension": 0,
+            "index_path": "",
+            "metadata_path": "",
+            "message": chunk_res.get("message")
+        }
+
+    emb_res = generate_embeddings_for_chunks(chunk_res["chunks"])
+
+    if not emb_res["success"]:
+        return {
+            "success": False,
+            "filename": chunk_res.get("filename"),
+            "total_chunks": 0,
+            "dimension": 0,
+            "index_path": "",
+            "metadata_path": "",
+            "message": emb_res.get("message")
+        }
+
+    # Create FAISS IndexFlatL2 using the generated embedding vectors
+    index = create_faiss_index(emb_res["numpy_embeddings"])
+
+    # Save index and metadata to backend/vectorstore/
+    save_info = save_faiss_index_and_metadata(
+        index=index,
+        chunks=emb_res["embedded_chunks"],
+        index_path=index_path,
+        metadata_path=metadata_path,
+        extra_info={
+            "filename": chunk_res["filename"],
+            "chunk_size": chunk_size,
+            "chunk_overlap": chunk_overlap,
+            "model_name": DEFAULT_MODEL_NAME
+        }
+    )
+
+    return {
+        "success": True,
+        "filename": chunk_res["filename"],
+        "total_chunks": save_info["total_chunks"],
+        "dimension": save_info["dimension"],
+        "index_path": save_info["index_path"],
+        "metadata_path": save_info["metadata_path"],
+        "message": f"Successfully processed PDF, generated {save_info['total_chunks']} embeddings (dim {save_info['dimension']}), and saved FAISS index + metadata."
+    }
+
