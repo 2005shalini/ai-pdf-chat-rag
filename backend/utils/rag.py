@@ -353,3 +353,83 @@ def process_pdf_into_faiss_index(filepath, chunk_size=500, chunk_overlap=100, in
         "message": f"Successfully processed PDF, generated {save_info['total_chunks']} embeddings (dim {save_info['dimension']}), and saved FAISS index + metadata."
     }
 
+
+def search_similar_chunks(question, top_k=3, index_path=DEFAULT_INDEX_PATH, metadata_path=DEFAULT_METADATA_PATH, model_name=DEFAULT_MODEL_NAME):
+    """
+    Phase 6 - Step 3: FAISS Similarity Search.
+    Embeds the user question and performs similarity search on the FAISS index to retrieve the top_k most relevant chunks.
+
+    :param question: query string from user
+    :param top_k: number of top relevant chunks to retrieve (default: 3)
+    :param index_path: path to .faiss file
+    :param metadata_path: path to .json metadata file
+    :param model_name: SentenceTransformer model name
+    :return: dict with success, question, results, and number_of_results
+    """
+    if not question or not str(question).strip():
+        return {
+            "success": False,
+            "question": question or "",
+            "results": [],
+            "number_of_results": 0,
+            "message": "Question cannot be empty."
+        }
+
+    clean_question = str(question).strip()
+
+    # Load FAISS index and metadata
+    load_res = load_faiss_index_and_metadata(index_path, metadata_path)
+    if not load_res["success"]:
+        return {
+            "success": False,
+            "question": clean_question,
+            "results": [],
+            "number_of_results": 0,
+            "message": load_res["message"]
+        }
+
+    index = load_res["index"]
+    chunks = load_res["chunks"]
+
+    if index.ntotal == 0 or len(chunks) == 0:
+        return {
+            "success": False,
+            "question": clean_question,
+            "results": [],
+            "number_of_results": 0,
+            "message": "FAISS index or metadata contains no chunks to search."
+        }
+
+    # Generate query embedding using the existing model
+    model = get_embedding_model(model_name)
+    query_emb = model.encode([clean_question], convert_to_numpy=True, show_progress_bar=False)
+    query_emb = np.ascontiguousarray(query_emb, dtype=np.float32)
+
+    # Determine k (cannot exceed available vectors)
+    k = min(max(1, int(top_k)), index.ntotal)
+
+    # FAISS L2 similarity search
+    distances, indices = index.search(query_emb, k)
+
+    results = []
+    for dist, idx in zip(distances[0], indices[0]):
+        if idx == -1 or idx >= len(chunks):
+            continue
+        chunk = chunks[idx]
+        results.append({
+            "chunk_id": chunk.get("chunk_id", int(idx)),
+            "page": chunk.get("page", 1),
+            "text": chunk.get("text", ""),
+            "score": float(dist),
+            "distance": float(dist)
+        })
+
+    return {
+        "success": True,
+        "question": clean_question,
+        "results": results,
+        "number_of_results": len(results),
+        "message": f"Successfully retrieved {len(results)} relevant chunk(s)."
+    }
+
+

@@ -3,7 +3,12 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from utils.pdf import extract_text_from_pdf
-from utils.rag import process_pdf_into_chunks, process_pdf_into_embeddings, process_pdf_into_faiss_index
+from utils.rag import (
+    process_pdf_into_chunks,
+    process_pdf_into_embeddings,
+    process_pdf_into_faiss_index,
+    search_similar_chunks
+)
 
 app = Flask(__name__)
 
@@ -50,7 +55,8 @@ def index():
             "extract": "POST /extract",
             "chunk": "POST /chunk",
             "embed": "POST /embed",
-            "index": "POST /index"
+            "index": "POST /index",
+            "search": "POST /search"
         }
     }), 200
 
@@ -393,6 +399,65 @@ def create_pdf_faiss_index():
             "index_path": "",
             "metadata_path": "",
             "message": f"FAISS index creation error: {str(e)}"
+        }), 500
+
+
+@app.route('/search', methods=['POST', 'OPTIONS'])
+@app.route('/api/search', methods=['POST', 'OPTIONS'])
+def search_pdf_chunks():
+    if request.method == 'OPTIONS':
+        return jsonify({"status": "ok"}), 200
+
+    try:
+        data = request.get_json(silent=True) or request.form
+        if not data or 'question' not in data:
+            return jsonify({
+                "success": False,
+                "question": "",
+                "results": [],
+                "number_of_results": 0,
+                "message": "Missing 'question' in request body."
+            }), 400
+
+        question = data.get('question', '')
+        if not question or not str(question).strip():
+            return jsonify({
+                "success": False,
+                "question": "",
+                "results": [],
+                "number_of_results": 0,
+                "message": "Question cannot be empty."
+            }), 400
+
+        top_k = int(data.get('top_k', 3)) if data.get('top_k') is not None else 3
+
+        result = search_similar_chunks(question=str(question).strip(), top_k=top_k)
+
+        if not result["success"]:
+            status_code = 404 if "not found" in result.get("message", "").lower() else 400
+            return jsonify({
+                "success": False,
+                "question": result.get("question", str(question).strip()),
+                "results": [],
+                "number_of_results": 0,
+                "message": result.get("message", "Search failed.")
+            }), status_code
+
+        return jsonify({
+            "success": True,
+            "question": result["question"],
+            "results": result["results"],
+            "number_of_results": result["number_of_results"],
+            "message": result.get("message", "Search completed successfully.")
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "question": "",
+            "results": [],
+            "number_of_results": 0,
+            "message": f"Search error: {str(e)}"
         }), 500
 
 
