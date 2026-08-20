@@ -10,6 +10,12 @@ from utils.rag import (
     search_similar_chunks
 )
 
+from dotenv import load_dotenv
+
+# Load environment variables from backend/.env
+env_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(env_path)
+
 app = Flask(__name__)
 
 # Configure CORS explicitly to support 127.0.0.1:5500, localhost:5500, and all frontend requests
@@ -43,6 +49,19 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
 
+def get_gemini_client():
+    """Initializes and returns Google Gemini client using GEMINI_API_KEY from environment."""
+    api_key = os.getenv('GEMINI_API_KEY')
+    if not api_key or not api_key.strip() or api_key.strip() == 'your_actual_gemini_api_key':
+        return None, "GEMINI_API_KEY is NOT CONFIGURED (or using placeholder) in backend/.env"
+    try:
+        from google import genai
+        client = genai.Client(api_key=api_key.strip())
+        return client, None
+    except Exception as e:
+        return None, f"Failed to initialize Gemini SDK client: {str(e)}"
+
+
 @app.route('/', methods=['GET'])
 @app.route('/health', methods=['GET'])
 def index():
@@ -56,9 +75,62 @@ def index():
             "chunk": "POST /chunk",
             "embed": "POST /embed",
             "index": "POST /index",
-            "search": "POST /search"
+            "search": "POST /search",
+            "gemini_test": "POST /gemini-test"
         }
     }), 200
+
+
+@app.route('/gemini-test', methods=['POST', 'GET', 'OPTIONS'])
+@app.route('/api/gemini-test', methods=['POST', 'GET', 'OPTIONS'])
+def test_gemini_connection():
+    if request.method == 'OPTIONS':
+        return jsonify({"status": "ok"}), 200
+
+    api_key = os.getenv('GEMINI_API_KEY')
+    if not api_key or not api_key.strip() or api_key.strip() == 'your_actual_gemini_api_key':
+        return jsonify({
+            "success": False,
+            "configured": False,
+            "message": "GEMINI_API_KEY is NOT CONFIGURED in backend/.env. Replace 'your_actual_gemini_api_key' with a valid key."
+        }), 400
+
+    client, err = get_gemini_client()
+    if not client:
+        return jsonify({
+            "success": False,
+            "configured": True,
+            "message": err
+        }), 500
+
+    prompt = "Say hello in one sentence."
+    if request.method == 'POST':
+        data = request.get_json(silent=True) or request.form
+        if data and data.get('prompt'):
+            prompt = data.get('prompt')
+
+    model_name = os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')
+
+    try:
+        response = client.models.generate_content(
+            model=model_name,
+            contents=prompt
+        )
+        return jsonify({
+            "success": True,
+            "configured": True,
+            "model": model_name,
+            "prompt": prompt,
+            "response": response.text if response else "",
+            "message": "Gemini connection tested successfully!"
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "configured": True,
+            "model": model_name,
+            "message": f"Gemini API call error: {str(e)}"
+        }), 500
 
 
 @app.route('/upload', methods=['POST', 'OPTIONS'])
