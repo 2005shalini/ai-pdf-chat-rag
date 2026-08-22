@@ -109,7 +109,7 @@ def test_gemini_connection():
         if data and data.get('prompt'):
             prompt = data.get('prompt')
 
-    model_name = os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')
+    model_name = os.getenv('GEMINI_MODEL', 'gemini-3.6-flash')
 
     try:
         response = client.models.generate_content(
