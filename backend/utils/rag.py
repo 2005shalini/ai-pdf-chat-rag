@@ -433,3 +433,147 @@ def search_similar_chunks(question, top_k=3, index_path=DEFAULT_INDEX_PATH, meta
     }
 
 
+def get_gemini_client():
+    """Initializes and returns Google Gemini client using GEMINI_API_KEY from environment."""
+    api_key = os.getenv('GEMINI_API_KEY')
+    if not api_key or not api_key.strip() or api_key.strip() == 'your_actual_gemini_api_key':
+        return None, "GEMINI_API_KEY is NOT CONFIGURED (or using placeholder) in backend/.env"
+    try:
+        from google import genai
+        client = genai.Client(api_key=api_key.strip())
+        return client, None
+    except Exception as e:
+        return None, f"Failed to initialize Gemini SDK client: {str(e)}"
+
+
+def generate_rag_answer(question, top_k=3, index_path=DEFAULT_INDEX_PATH, metadata_path=DEFAULT_METADATA_PATH, model_name=None):
+    """
+    Phase 7 - Step 2A: RAG Answer Generation Helper.
+    Connects similarity search on FAISS vectorstore with Google Gemini AI generation.
+
+    :param question: user question string
+    :param top_k: number of relevant chunks to retrieve (default: 3)
+    :param index_path: path to .faiss file
+    :param metadata_path: path to .json metadata file
+    :param model_name: Gemini model name (default: GEMINI_MODEL env var or 'gemini-3.6-flash')
+    :return: dict with success, question, answer, sources, number_of_sources, and message
+    """
+    if not question or not str(question).strip():
+        return {
+            "success": False,
+            "question": question or "",
+            "answer": "",
+            "sources": [],
+            "number_of_sources": 0,
+            "message": "Question cannot be empty."
+        }
+
+    clean_question = str(question).strip()
+
+    # Step 1: Perform FAISS similarity search to retrieve top_k relevant chunks
+    search_res = search_similar_chunks(
+        question=clean_question,
+        top_k=top_k,
+        index_path=index_path,
+        metadata_path=metadata_path
+    )
+
+    if not search_res.get("success"):
+        return {
+            "success": False,
+            "question": clean_question,
+            "answer": "",
+            "sources": [],
+            "number_of_sources": 0,
+            "message": search_res.get("message", "FAISS search failed.")
+        }
+
+    retrieved_chunks = search_res.get("results", [])
+    if not retrieved_chunks:
+        return {
+            "success": False,
+            "question": clean_question,
+            "answer": "The requested information was not found in the uploaded document.",
+            "sources": [],
+            "number_of_sources": 0,
+            "message": "No relevant document chunks found for the given question."
+        }
+
+    # Step 2: Build context string from page text and page numbers
+    context_blocks = []
+    sources = []
+    for idx, c in enumerate(retrieved_chunks, 1):
+        page_num = c.get("page", 1)
+        chunk_text = c.get("text", "").strip()
+        context_blocks.append(f"[Source {idx} - Page {page_num}]\n{chunk_text}")
+
+        sources.append({
+            "chunk_id": c.get("chunk_id"),
+            "page": page_num,
+            "text": chunk_text,
+            "score": c.get("score"),
+            "distance": c.get("distance")
+        })
+
+    context_str = "\n\n".join(context_blocks)
+
+    # Step 3: Construct Gemini prompt enforcing strict PDF context constraint
+    prompt = f"""You are a helpful AI assistant that answers questions strictly based on the provided PDF context.
+
+Instructions:
+1. Answer the question using ONLY the provided PDF context below.
+2. Do NOT invent, assume, or extrapolate any information that is not directly stated in the context.
+3. If the answer is not present in the provided context, respond with: "The requested information was not found in the uploaded document."
+4. Provide a clear, concise, and accurate answer.
+
+Context from PDF:
+{context_str}
+
+User Question: {clean_question}
+
+Answer:"""
+
+    # Step 4: Initialize Gemini client
+    client, err = get_gemini_client()
+    if not client:
+        return {
+            "success": False,
+            "question": clean_question,
+            "answer": "",
+            "sources": sources,
+            "number_of_sources": len(sources),
+            "message": err or "Gemini API client is not configured."
+        }
+
+    # Step 5: Determine Gemini model (default to GEMINI_MODEL env var or gemini-3.6-flash)
+    if not model_name:
+        model_name = os.getenv('GEMINI_MODEL', 'gemini-3.6-flash')
+
+    # Step 6: Generate answer with Gemini
+    try:
+        response = client.models.generate_content(
+            model=model_name,
+            contents=prompt
+        )
+        answer_text = response.text.strip() if response and hasattr(response, 'text') and response.text else ""
+
+        return {
+            "success": True,
+            "question": clean_question,
+            "answer": answer_text,
+            "sources": sources,
+            "number_of_sources": len(sources),
+            "message": "Successfully generated RAG answer using Gemini."
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "question": clean_question,
+            "answer": "",
+            "sources": sources,
+            "number_of_sources": len(sources),
+            "message": f"Gemini API call error: {str(e)}"
+        }
+
+
+
